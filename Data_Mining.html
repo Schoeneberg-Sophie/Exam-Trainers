@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Mining Exam Trainer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .katex-formula {
+            font-family: 'Fira Code', monospace;
+            background: rgba(59, 130, 246, 0.08);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+        .dark .katex-formula {
+            background: rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Navbar -->
+    <header class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center">
+                    <i class="fa-solid fa-graduation-cap text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Data Mining Exam Trainer</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Master core algorithms with instant practice & grading</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="themeToggle" onclick="toggleTheme()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="lg:col-span-1 space-y-2">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-2">Modules</div>
+            <nav id="moduleNav" class="space-y-1">
+                <!-- Populated by JS -->
+            </nav>
+            <div class="pt-6 px-3">
+                <div class="p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20">
+                    <h3 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Exam Tips</h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-300">Tolerance is set to ±0.01. Always verify your rounding rules and formula parameters before submitting.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Content Panel -->
+        <section class="lg:col-span-3 space-y-6">
+            <div id="moduleContent" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+                <!-- Dynamically rendered problem content -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Script Logic -->
+    <script>
+        // Theme Toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // State & Modules definition
+        let currentModule = 'distance';
+        let problemData = {};
+
+        const modules = [
+            { id: 'distance', name: 'Distance & Norms', icon: 'fa-ruler', desc: 'Euclidean, Manhattan & Lp Norms' },
+            { id: 'scaling', name: 'Scaling & Normalization', icon: 'fa-sliders', desc: 'StandardScaler & MinMaxScaler' },
+            { id: 'similarity', name: 'Similarity & Metrics', icon: 'fa-clone', desc: 'Cosine Similarity & Jaccard Coefficient' },
+            { id: 'trees', name: 'Decision Trees & Gini Split', icon: 'fa-folder-tree', desc: 'Gini Impurity & Information Gain' },
+            { id: 'performance', name: 'Performance Evaluation', icon: 'fa-chart-pie', desc: 'Confusion Matrix, Precision, Recall, F1' },
+            { id: 'bayes', name: 'Naive Bayes & Laplace', icon: 'fa-brain', desc: 'Bayes Theorem & Laplace Smoothing' },
+            { id: 'stats', name: 'Descriptive Statistics', icon: 'fa-calculator', desc: 'Sample Mean & Standard Deviation' }
+        ];
+
+        // Random helpers
+        const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const randFloat = (min, max, decimals = 2) => parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
+
+        // Generate Problem Data for active module
+        function generateProblem(modId) {
+            currentModule = modId;
+            switch(modId) {
+                case 'distance':
+                    problemData = {
+                        p: [randInt(-5, 10), randInt(-5, 10), randInt(-5, 10)],
+                        q: [randInt(-5, 10), randInt(-5, 10), randInt(-5, 10)],
+                        r: randInt(1, 3) // L_r norm
+                    };
+                    problemData.ansEuclidean = Math.sqrt(problemData.p.reduce((acc, val, i) => acc + Math.pow(val - problemData.q[i], 2), 0));
+                    problemData.ansManhattan = problemData.p.reduce((acc, val, i) => acc + Math.abs(val - problemData.q[i]), 0);
+                    problemData.ansLp = Math.pow(problemData.p.reduce((acc, val, i) => acc + Math.pow(Math.abs(val - problemData.q[i]), problemData.r), 0), 1 / problemData.r);
+                    break;
+                case 'scaling':
+                    const arr = Array.from({length: 5}, () => randInt(10, 90));
+                    const target = arr[randInt(0, arr.length - 1)];
+                    const mean = arr.reduce((a,b) => a+b, 0) / arr.length;
+                    const variance = arr.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / (arr.length - 1);
+                    const std = Math.sqrt(variance);
+                    const min = Math.min(...arr);
+                    const max = Math.max(...arr);
+                    problemData = {
+                        arr, target, mean, std, min, max,
+                        ansStandard: (target - mean) / std,
+                        ansMinMax: (target - min) / (max - min)
+                    };
+                    break;
+                case 'similarity':
+                    const v1 = [randInt(0, 5), randInt(0, 5), randInt(0, 5), randInt(0, 5)];
+                    const v2 = [randInt(0, 5), randInt(0, 5), randInt(0, 5), randInt(0, 5)];
+                    const dot = v1.reduce((sum, a, i) => sum + a * v2[i], 0);
+                    const mag1 = Math.sqrt(v1.reduce((sum, a) => sum + a * a, 0));
+                    const mag2 = Math.sqrt(v2.reduce((sum, a) => sum + a * a, 0));
+                    
+                    const setA = new Set(Array.from({length: randInt(2, 4)}, () => randInt(1, 8)));
+                    const setB = new Set(Array.from({length: randInt(2, 4)}, () => randInt(1, 8)));
+                    const intersection = new Set([...setA].filter(x => setB.has(x)));
+                    const union = new Set([...setA, ...setB]);
+
+                    problemData = {
+                        v1, v2,
+                        ansCosine: mag1 === 0 || mag2 === 0 ? 0 : dot / (mag1 * mag2),
+                        setA: Array.from(setA),
+                        setB: Array.from(setB),
+                        ansJaccard: intersection.size / union.size
+                    };
+                    break;
+                case 'trees':
+                    const pYes = randInt(2, 10);
+                    const pNo = randInt(2, 10);
+                    const c1Yes = randInt(1, pYes);
+                    const c1No = randInt(1, pNo);
+                    const c2Yes = pYes - c1Yes;
+                    const c2No = pNo - c1No;
+                    
+                    const totalP = pYes + pNo;
+                    const giniParent = 1 - Math.pow(pYes/totalP, 2) - Math.pow(pNo/totalP, 2);
+                    
+                    const t1 = c1Yes + c1No;
+                    const giniC1 = t1 === 0 ? 0 : 1 - Math.pow(c1Yes/t1, 2) - Math.pow(c1No/t1, 2);
+                    
+                    const t2 = c2Yes + c2No;
+                    const giniC2 = t2 === 0 ? 0 : 1 - Math.pow(c2Yes/t2, 2) - Math.pow(c2No/t2, 2);
+                    
+                    const weightedGini = (t1/totalP) * giniC1 + (t2/totalP) * giniC2;
+                    const infoGain = giniParent - weightedGini;
+
+                    problemData = {
+                        pYes, pNo, c1Yes, c1No, c2Yes, c2No,
+                        ansGiniParent: giniParent,
+                        ansWeightedGini: weightedGini,
+                        ansInfoGain: infoGain
+                    };
+                    break;
+                case 'performance':
+                    const tp = randInt(20, 90);
+                    const fp = randInt(5, 25);
+                    const fn = randInt(5, 25);
+                    const tn = randInt(30, 100);
+                    const total = tp + fp + fn + tn;
+                    
+                    const accuracy = (tp + tn) / total;
+                    const precision = (tp + fp) === 0 ? 0 : tp / (tp + fp);
+                    const recall = (tp + fn) === 0 ? 0 : tp / (tp + fn);
+                    const f1 = (precision + recall) === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+
+                    problemData = {
+                        tp, fp, fn, tn,
+                        ansAccuracy: accuracy,
+                        ansPrecision: precision,
+                        ansRecall: recall,
+                        ansF1: f1
+                    };
+                    break;
+                case 'bayes':
+                    const yesCount = randInt(5, 15);
+                    const noCount = randInt(5, 15);
+                    const totalN = yesCount + noCount;
+                    const featYes = randInt(1, yesCount - 1);
+                    const featNo = randInt(1, noCount - 1);
+                    const laplaceK = 1;
+                    const laplaceV = 2; // binary feature classes
+
+                    const priorYes = yesCount / totalN;
+                    const condYes = (featYes + laplaceK) / (yesCount + laplaceK * laplaceV);
+                    const posteriorUnnormalized = priorYes * condYes;
+
+                    problemData = {
+                        yesCount, noCount, featYes, featNo, totalN,
+                        ansPrior: priorYes,
+                        ansCond: condYes,
+                        ansPosterior: posteriorUnnormalized
+                    };
+                    break;
+                case 'stats':
+                    const statsArr = Array.from({length: 6}, () => randInt(1, 50));
+                    const meanVal = statsArr.reduce((a,b) => a+b, 0) / statsArr.length;
+                    const varVal = statsArr.reduce((a,b) => a + Math.pow(b - meanVal, 2), 0) / (statsArr.length - 1);
+                    problemData = {
+                        statsArr,
+                        ansMean: meanVal,
+                        ansStd: Math.sqrt(varVal)
+                    };
+                    break;
+            }
+            renderModule();
+        }
+
+        // Render Sidebar Navigation
+        function renderNav() {
+            const nav = document.getElementById('moduleNav');
+            nav.innerHTML = modules.map(m => `
+                <button onclick="generateProblem('${m.id}')" class="w-full flex items-center space-x-3 px-3 py-3 rounded-2xl text-left transition ${currentModule === m.id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'}">
+                    <i class="fa-solid ${m.icon} w-5 text-center"></i>
+                    <div>
+                        <div class="text-sm font-semibold">${m.name}</div>
+                        <div class="text-xs opacity-75 truncate max-w-[180px]">${m.desc}</div>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        // Render Active Module Content
+        function renderModule() {
+            renderNav();
+            const container = document.getElementById('moduleContent');
+            let contentHTML = '';
+
+            switch(currentModule) {
+                case 'distance':
+                    contentHTML = `
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full">Module 1</span>
+                                <h2 class="text-2xl font-bold mt-1">Distance & Norms</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Calculate Euclidean distance, Manhattan distance, and L<sub>r</sub> Minkowski norm.</p>
+                            </div>
+                            <button onclick="generateProblem('distance')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>New Problem</span>
+                            </button>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="mb-6 overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-4">Vector / Parameter</th>
+                                        <th class="py-3 px-4">Dimension 1 (x₁)</th>
+                                        <th class="py-3 px-4">Dimension 2 (x₂)</th>
+                                        <th class="py-3 px-4">Dimension 3 (x₃)</th>
+                                        <th class="py-3 px-4">Norm Parameter (r)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm font-mono">
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-blue-600 dark:text-blue-400">Vector p</td>
+                                        <td class="py-3 px-4">${problemData.p[0]}</td>
+                                        <td class="py-3 px-4">${problemData.p[1]}</td>
+                                        <td class="py-3 px-4">${problemData.p[2]}</td>
+                                        <td class="py-3 px-4 text-slate-400">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-indigo-600 dark:text-indigo-400">Vector q</td>
+                                        <td class="py-3 px-4">${problemData.q[0]}</td>
+                                        <td class="py-3 px-4">${problemData.q[1]}</td>
+                                        <td class="py-3 px-4">${problemData.q[2]}</td>
+                                        <td class="py-3 px-4 text-slate-400">-</td>
+                                    </tr>
+                                    <tr class="bg-slate-50/50 dark:bg-slate-800/30">
+                                        <td class="py-3 px-4 font-sans font-semibold text-slate-500">Minkowski Order (r)</td>
+                                        <td colspan="3" class="py-3 px-4 text-slate-400">-</td>
+                                        <td class="py-3 px-4 font-bold text-amber-500">${problemData.r}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Formulas Hint -->
+                        <div class="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Formulas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                                <div><strong>Euclidean:</strong> <span class="katex-formula">d(p,q) = √Σ(pᵢ - qᵢ)²</span></div>
+                                <div><strong>Manhattan:</strong> <span class="katex-formula">d(p,q) = Σ|pᵢ - qᵢ|</span></div>
+                                <div><strong>Minkowski:</strong> <span class="katex-formula">Lᵣ(p,q) = (Σ|pᵢ - qᵢ|ʳ)^(1/r)</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Input fields -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Euclidean Distance</label>
+                                <input type="number" step="any" id="ans1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Manhattan Distance</label>
+                                <input type="number" step="any" id="ans2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">L<sub>${problemData.r}</sub> Norm Distance</label>
+                                <input type="number" step="any" id="ans3" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <button onclick="checkDistance()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 transition">Check Answer</button>
+                            <button onclick="showSolutionDistance()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Show Solution</button>
+                        </div>
+                        <div id="feedback" class="mt-4"></div>
+                    `;
+                    break;
+                case 'scaling':
+                    contentHTML = `
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full">Module 2</span>
+                                <h2 class="text-2xl font-bold mt-1">Scaling & Normalization</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Compute Z-score standard scaling and Min-Max normalization for target value.</p>
+                            </div>
+                            <button onclick="generateProblem('scaling')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>New Problem</span>
+                            </button>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="mb-6 overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-4">Dataset Elements</th>
+                                        <th class="py-3 px-4">Target Value (x)</th>
+                                        <th class="py-3 px-4">Sample Mean (μ)</th>
+                                        <th class="py-3 px-4">Sample Std Dev (σ)</th>
+                                        <th class="py-3 px-4">Min / Max</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm font-mono">
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-blue-600 dark:text-blue-400">[${problemData.arr.join(', ')}]</td>
+                                        <td class="py-3 px-4 font-bold text-emerald-500">${problemData.target}</td>
+                                        <td class="py-3 px-4">${problemData.mean.toFixed(2)}</td>
+                                        <td class="py-3 px-4">${problemData.std.toFixed(2)}</td>
+                                        <td class="py-3 px-4">${problemData.min} / ${problemData.max}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Formulas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div><strong>StandardScaler:</strong> <span class="katex-formula">z = (x - μ) / σ</span></div>
+                                <div><strong>MinMaxScaler:</strong> <span class="katex-formula">x_norm = (x - x_min) / (x_max - x_min)</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Standard Scaled Value (z)</label>
+                                <input type="number" step="any" id="ans1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Min-Max Scaled Value [0, 1]</label>
+                                <input type="number" step="any" id="ans2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <button onclick="checkScaling()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 transition">Check Answer</button>
+                            <button onclick="showSolutionScaling()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Show Solution</button>
+                        </div>
+                        <div id="feedback" class="mt-4"></div>
+                    `;
+                    break;
+                case 'similarity':
+                    contentHTML = `
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full">Module 3</span>
+                                <h2 class="text-2xl font-bold mt-1">Similarity & Metrics</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Calculate Cosine Similarity between vectors and Jaccard Coefficient between sets.</p>
+                            </div>
+                            <button onclick="generateProblem('similarity')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>New Problem</span>
+                            </button>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="mb-6 overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-4">Metric / Object</th>
+                                        <th class="py-3 px-4">Values / Elements</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm font-mono">
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-blue-600">Vector v₁</td>
+                                        <td class="py-3 px-4">[${problemData.v1.join(', ')}]</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-indigo-600">Vector v₂</td>
+                                        <td class="py-3 px-4">[${problemData.v2.join(', ')}]</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-emerald-600">Set A</td>
+                                        <td class="py-3 px-4">{${problemData.setA.join(', ')}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-amber-600">Set B</td>
+                                        <td class="py-3 px-4">{${problemData.setB.join(', ')}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Formulas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div><strong>Cosine Similarity:</strong> <span class="katex-formula">cos(θ) = (v₁ · v₂) / (||v₁|| ||v₂||)</span></div>
+                                <div><strong>Jaccard Coefficient:</strong> <span class="katex-formula">J(A,B) = |A ∩ B| / |A ∪ B|</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Cosine Similarity</label>
+                                <input type="number" step="any" id="ans1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Jaccard Coefficient</label>
+                                <input type="number" step="any" id="ans2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <button onclick="checkSimilarity()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 transition">Check Answer</button>
+                            <button onclick="showSolutionSimilarity()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Show Solution</button>
+                        </div>
+                        <div id="feedback" class="mt-4"></div>
+                    `;
+                    break;
+                case 'trees':
+                    contentHTML = `
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full">Module 4</span>
+                                <h2 class="text-2xl font-bold mt-1">Decision Trees & Gini Split</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Calculate parent Gini impurity, weighted child Gini, and Information Gain.</p>
+                            </div>
+                            <button onclick="generateProblem('trees')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>New Problem</span>
+                            </button>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="mb-6 overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-4">Node / Split</th>
+                                        <th class="py-3 px-4">Class Yes (1)</th>
+                                        <th class="py-3 px-4">Class No (0)</th>
+                                        <th class="py-3 px-4">Total Instances</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm font-mono">
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-blue-600">Parent Node</td>
+                                        <td class="py-3 px-4">${problemData.pYes}</td>
+                                        <td class="py-3 px-4">${problemData.pNo}</td>
+                                        <td class="py-3 px-4">${problemData.pYes + problemData.pNo}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-indigo-600">Child Node 1</td>
+                                        <td class="py-3 px-4">${problemData.c1Yes}</td>
+                                        <td class="py-3 px-4">${problemData.c1No}</td>
+                                        <td class="py-3 px-4">${problemData.c1Yes + problemData.c1No}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-emerald-600">Child Node 2</td>
+                                        <td class="py-3 px-4">${problemData.c2Yes}</td>
+                                        <td class="py-3 px-4">${problemData.c2No}</td>
+                                        <td class="py-3 px-4">${problemData.c2Yes + problemData.c2No}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Formulas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div><strong>Gini Impurity:</strong> <span class="katex-formula">Gini(t) = 1 - Σ(p(i|t))²</span></div>
+                                <div><strong>Information Gain:</strong> <span class="katex-formula">IG = Gini(Parent) - Σ (Nᵥ / N) Gini(v)</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Parent Gini Impurity</label>
+                                <input type="number" step="any" id="ans1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Weighted Child Gini</label>
+                                <input type="number" step="any" id="ans2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Information Gain</label>
+                                <input type="number" step="any" id="ans3" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <button onclick="checkTrees()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 transition">Check Answer</button>
+                            <button onclick="showSolutionTrees()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Show Solution</button>
+                        </div>
+                        <div id="feedback" class="mt-4"></div>
+                    `;
+                    break;
+                case 'performance':
+                    contentHTML = `
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full">Module 5</span>
+                                <h2 class="text-2xl font-bold mt-1">Performance Evaluation</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Compute Accuracy, Precision, Recall, and F1-score from the confusion matrix.</p>
+                            </div>
+                            <button onclick="generateProblem('performance')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>New Problem</span>
+                            </button>
+                        </div>
+
+                        <!-- Data Table (Confusion Matrix) -->
+                        <div class="mb-6 overflow-x-auto">
+                            <table class="w-full text-center border-collapse border border-slate-200 dark:border-slate-800 font-mono text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 dark:bg-slate-800 text-xs uppercase text-slate-500">
+                                        <th class="py-3 px-4 border border-slate-200 dark:border-slate-800">Actual \\ Predicted</th>
+                                        <th class="py-3 px-4 border border-slate-200 dark:border-slate-800">Positive (1)</th>
+                                        <th class="py-3 px-4 border border-slate-200 dark:border-slate-800">Negative (0)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="py-3 px-4 border border-slate-200 dark:border-slate-800 font-sans font-semibold bg-slate-50 dark:bg-slate-800/50">Positive (1)</td>
+                                        <td class="py-3 px-4 border border-slate-200 dark:border-slate-800 font-bold text-emerald-500">TP = ${problemData.tp}</td>
+                                        <td class="py-3 px-4 border border-slate-200 dark:border-slate-800 font-bold text-amber-500">FN = ${problemData.fn}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 border border-slate-200 dark:border-slate-800 font-sans font-semibold bg-slate-50 dark:bg-slate-800/50">Negative (0)</td>
+                                        <td class="py-3 px-4 border border-slate-200 dark:border-slate-800 font-bold text-amber-500">FP = ${problemData.fp}</td>
+                                        <td class="py-3 px-4 border border-slate-200 dark:border-slate-800 font-bold text-emerald-500">TN = ${problemData.tn}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Formulas</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                <div><strong>Accuracy:</strong> <span class="katex-formula">(TP+TN)/Total</span></div>
+                                <div><strong>Precision:</strong> <span class="katex-formula">TP/(TP+FP)</span></div>
+                                <div><strong>Recall:</strong> <span class="katex-formula">TP/(TP+FN)</span></div>
+                                <div><strong>F1-Score:</strong> <span class="katex-formula">2PR/(P+R)</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Accuracy</label>
+                                <input type="number" step="any" id="ans1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Precision</label>
+                                <input type="number" step="any" id="ans2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Recall</label>
+                                <input type="number" step="any" id="ans3" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">F1-Score</label>
+                                <input type="number" step="any" id="ans4" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <button onclick="checkPerformance()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 transition">Check Answer</button>
+                            <button onclick="showSolutionPerformance()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Show Solution</button>
+                        </div>
+                        <div id="feedback" class="mt-4"></div>
+                    `;
+                    break;
+                case 'bayes':
+                    contentHTML = `
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full">Module 6</span>
+                                <h2 class="text-2xl font-bold mt-1">Naive Bayes & Laplace Smoothing</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Compute prior probability, class-conditional probability with Laplace correction (k=1).</p>
+                            </div>
+                            <button onclick="generateProblem('bayes')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>New Problem</span>
+                            </button>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="mb-6 overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-4">Class Label</th>
+                                        <th class="py-3 px-4">Total Instances</th>
+                                        <th class="py-3 px-4">Feature Match Count</th>
+                                        <th class="py-3 px-4">Laplace Parameter (k)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm font-mono">
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-blue-600">Class = Yes</td>
+                                        <td class="py-3 px-4">${problemData.yesCount}</td>
+                                        <td class="py-3 px-4">${problemData.featYes}</td>
+                                        <td class="py-3 px-4">1</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-indigo-600">Class = No</td>
+                                        <td class="py-3 px-4">${problemData.noCount}</td>
+                                        <td class="py-3 px-4">${problemData.featNo}</td>
+                                        <td class="py-3 px-4">1</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Formulas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div><strong>Prior Probability:</strong> <span class="katex-formula">P(C) = N(C) / N_total</span></div>
+                                <div><strong>Laplace Conditional:</strong> <span class="katex-formula">P(X|C) = (N_c,x + k) / (N_c + k·V)</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Prior P(Yes)</label>
+                                <input type="number" step="any" id="ans1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Conditional P(Feature|Yes)</label>
+                                <input type="number" step="any" id="ans2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Unnormalized Posterior</label>
+                                <input type="number" step="any" id="ans3" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <button onclick="checkBayes()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 transition">Check Answer</button>
+                            <button onclick="showSolutionBayes()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Show Solution</button>
+                        </div>
+                        <div id="feedback" class="mt-4"></div>
+                    `;
+                    break;
+                case 'stats':
+                    contentHTML = `
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full">Module 7</span>
+                                <h2 class="text-2xl font-bold mt-1">Descriptive Statistics</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Compute sample mean and sample standard deviation.</p>
+                            </div>
+                            <button onclick="generateProblem('stats')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>New Problem</span>
+                            </button>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="mb-6 overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-4">Dataset Observations (x)</th>
+                                        <th class="py-3 px-4">Sample Size (n)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm font-mono">
+                                    <tr>
+                                        <td class="py-3 px-4 font-sans font-semibold text-blue-600">[${problemData.statsArr.join(', ')}]</td>
+                                        <td class="py-3 px-4">${problemData.statsArr.length}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Formulas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div><strong>Sample Mean:</strong> <span class="katex-formula">μ = (1/n) Σ xᵢ</span></div>
+                                <div><strong>Sample Std Dev:</strong> <span class="katex-formula">s = √( (1/(n-1)) Σ (xᵢ - μ)² )</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Sample Mean</label>
+                                <input type="number" step="any" id="ans1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Sample Standard Deviation</label>
+                                <input type="number" step="any" id="ans2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <button onclick="checkStats()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 transition">Check Answer</button>
+                            <button onclick="showSolutionStats()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Show Solution</button>
+                        </div>
+                        <div id="feedback" class="mt-4"></div>
+                    `;
+                    break;
+            }
+            container.innerHTML = contentHTML;
+        }
+
+        // Grading Validation Helper
+        function grade(userVal, correctVal, tolerance = 0.02) {
+            return Math.abs(userVal - correctVal) <= tolerance;
+        }
+
+        function showFeedback(results, explanations) {
+            const fb = document.getElementById('feedback');
+            const allCorrect = results.every(r => r);
+            fb.innerHTML = `
+                <div class="p-4 rounded-2xl ${allCorrect ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400'} space-y-2">
+                    <div class="flex items-center space-x-2 font-semibold">
+                        <i class="fa-solid ${allCorrect ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i>
+                        <span>${allCorrect ? 'Correct! Excellent job.' : 'Some values need revision. Check explanations below.'}</span>
+                    </div>
+                    <ul class="text-xs space-y-1 list-disc pl-4">
+                        ${explanations.map((exp, idx) => `<li>Part ${idx+1}: ${exp}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Check Answer Implementations per module
+        function checkDistance() {
+            const u1 = parseFloat(document.getElementById('ans1').value);
+            const u2 = parseFloat(document.getElementById('ans2').value);
+            const u3 = parseFloat(document.getElementById('ans3').value);
+
+            const r1 = grade(u1, problemData.ansEuclidean);
+            const r2 = grade(u2, problemData.ansManhattan);
+            const r3 = grade(u3, problemData.ansLp);
+
+            showSolutionSteps([r1, r2, r3], [
+                `Euclidean = ${problemData.ansEuclidean.toFixed(2)}`,
+                `Manhattan = ${problemData.ansManhattan.toFixed(2)}`,
+                `L_${problemData.r} Norm = ${problemData.ansLp.toFixed(2)}`
+            ]);
+        }
+
+        function showSolutionDistance() {
+            showSolutionSteps([true, true, true], [
+                `Euclidean = ${problemData.ansEuclidean.toFixed(4)}`,
+                `Manhattan = ${problemData.ansManhattan.toFixed(4)}`,
+                `L_${problemData.r} Norm = ${problemData.ansLp.toFixed(4)}`
+            ]);
+        }
+
+        function checkScaling() {
+            const u1 = parseFloat(document.getElementById('ans1').value);
+            const u2 = parseFloat(document.getElementById('ans2').value);
+            const r1 = grade(u1, problemData.ansStandard);
+            const r2 = grade(u2, problemData.ansMinMax);
+            showSolutionSteps([r1, r2], [
+                `StandardScaler (z) = ${problemData.ansStandard.toFixed(4)}`,
+                `MinMaxScaler = ${problemData.ansMinMax.toFixed(4)}`
+            ]);
+        }
+        function showSolutionScaling() {
+            showSolutionSteps([true, true], [
+                `StandardScaler (z) = ${problemData.ansStandard.toFixed(4)}`,
+                `MinMaxScaler = ${problemData.ansMinMax.toFixed(4)}`
+            ]);
+        }
+
+        function checkSimilarity() {
+            const u1 = parseFloat(document.getElementById('ans1').value);
+            const u2 = parseFloat(document.getElementById('ans2').value);
+            const r1 = grade(u1, problemData.ansCosine);
+            const r2 = grade(u2, problemData.ansJaccard);
+            showSolutionSteps([r1, r2], [
+                `Cosine Similarity = ${problemData.ansCosine.toFixed(4)}`,
+                `Jaccard Coefficient = ${problemData.ansJaccard.toFixed(4)}`
+            ]);
+        }
+        function showSolutionSimilarity() {
+            showSolutionSteps([true, true], [
+                `Cosine Similarity = ${problemData.ansCosine.toFixed(4)}`,
+                `Jaccard Coefficient = ${problemData.ansJaccard.toFixed(4)}`
+            ]);
+        }
+
+        function checkTrees() {
+            const u1 = parseFloat(document.getElementById('ans1').value);
+            const u2 = parseFloat(document.getElementById('ans2').value);
+            const u3 = parseFloat(document.getElementById('ans3').value);
+            showSolutionSteps([grade(u1, problemData.ansGiniParent), grade(u2, problemData.ansWeightedGini), grade(u3, problemData.ansInfoGain)], [
+                `Parent Gini = ${problemData.ansGiniParent.toFixed(4)}`,
+                `Weighted Gini = ${problemData.ansWeightedGini.toFixed(4)}`,
+                `Information Gain = ${problemData.ansInfoGain.toFixed(4)}`
+            ]);
+        }
+        function showSolutionTrees() {
+            showSolutionSteps([true, true, true], [
+                `Parent Gini = ${problemData.ansGiniParent.toFixed(4)}`,
+                `Weighted Gini = ${problemData.ansWeightedGini.toFixed(4)}`,
+                `Information Gain = ${problemData.ansInfoGain.toFixed(4)}`
+            ]);
+        }
+
+        function checkPerformance() {
+            const u1 = parseFloat(document.getElementById('ans1').value);
+            const u2 = parseFloat(document.getElementById('ans2').value);
+            const u3 = parseFloat(document.getElementById('ans3').value);
+            const u4 = parseFloat(document.getElementById('ans4').value);
+            showSolutionSteps([grade(u1, problemData.ansAccuracy), grade(u2, problemData.ansPrecision), grade(u3, problemData.ansRecall), grade(u4, problemData.ansF1)], [
+                `Accuracy = ${problemData.ansAccuracy.toFixed(4)}`,
+                `Precision = ${problemData.ansPrecision.toFixed(4)}`,
+                `Recall = ${problemData.ansRecall.toFixed(4)}`,
+                `F1-Score = ${problemData.ansF1.toFixed(4)}`
+            ]);
+        }
+        function showSolutionPerformance() {
+            showSolutionSteps([true, true, true, true], [
+                `Accuracy = ${problemData.ansAccuracy.toFixed(4)}`,
+                `Precision = ${problemData.ansPrecision.toFixed(4)}`,
+                `Recall = ${problemData.ansRecall.toFixed(4)}`,
+                `F1-Score = ${problemData.ansF1.toFixed(4)}`
+            ]);
+        }
+
+        function checkBayes() {
+            const u1 = parseFloat(document.getElementById('ans1').value);
+            const u2 = parseFloat(document.getElementById('ans2').value);
+            const u3 = parseFloat(document.getElementById('ans3').value);
+            showSolutionSteps([grade(u1, problemData.ansPrior), grade(u2, problemData.ansCond), grade(u3, problemData.ansPosterior)], [
+                `Prior P(Yes) = ${problemData.ansPrior.toFixed(4)}`,
+                `Conditional P(Feature|Yes) = ${problemData.ansCond.toFixed(4)}`,
+                `Posterior = ${problemData.ansPosterior.toFixed(4)}`
+            ]);
+        }
+        function showSolutionBayes() {
+            showSolutionSteps([true, true, true], [
+                `Prior P(Yes) = ${problemData.ansPrior.toFixed(4)}`,
+                `Conditional P(Feature|Yes) = ${problemData.ansCond.toFixed(4)}`,
+                `Posterior = ${problemData.ansPosterior.toFixed(4)}`
+            ]);
+        }
+
+        function checkStats() {
+            const u1 = parseFloat(document.getElementById('ans1').value);
+            const u2 = parseFloat(document.getElementById('ans2').value);
+            showSolutionSteps([grade(u1, problemData.ansMean), grade(u2, problemData.ansStd)], [
+                `Sample Mean = ${problemData.ansMean.toFixed(4)}`,
+                `Sample Std Dev = ${problemData.ansStd.toFixed(4)}`
+            ]);
+        }
+        function showSolutionStats() {
+            showSolutionSteps([true, true], [
+                `Sample Mean = ${problemData.ansMean.toFixed(4)}`,
+                `Sample Std Dev = ${problemData.ansStd.toFixed(4)}`
+            ]);
+        }
+
+        function showSolutionSteps(results, explanations) {
+            showFeedback(results, explanations);
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            generateProblem('distance');
+        };
+    </script>
+</body>
+</html>
