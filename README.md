@@ -1,6 +1,5 @@
 # Exam-Trainers
-Exam Trainer for various exams generating random data for practice <br>
-Material is based off of courses from the University of Mannheim
+Exam Trainer for practice <br>
 
 Manoeuvre to: <br>
 [Data Mining Trainer](https://schoeneberg-sophie.github.io/Exam-Trainers/Data_Mining.html) (IE500 Data Mining) <br>
