@@ -3,11 +3,9 @@ Exam Trainer for various exams generating random data for practice <br>
 Material is based off of courses from the University of Mannheim
 
 Manoeuvre to: <br>
-[Data Mining Trainer][trainer1] (IE500 Data Mining) <br>
-[Blockchain Security Quiz][trainer2] (CS664 Blockchain Security)
+[Data Mining Trainer](https://schoeneberg-sophie.github.io/Exam-Trainers/Data_Mining.html) (IE500 Data Mining) <br>
+[Blockchain Security Quiz](https://schoeneberg-sophie.github.io/CS664_BlockchainSecurity/Quiz.html) (CS664 Blockchain Security)
 
-[trainer1]: https://schoeneberg-sophie.github.io/Exam-Trainers/Data_Mining.html <br>
-[trainer2]: https://schoeneberg-sophie.github.io/CS664_BlockchainSecurity/Quiz.html
 
 ## Note:
 - **WIP**: Links may be WIP
